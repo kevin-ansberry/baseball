@@ -75,3 +75,10 @@ docs/               research notes and limitations
 ## Data attribution
 
 Statcast data is served publicly by [Baseball Savant](https://baseballsavant.mlb.com/). `pybaseball` provides a convenient interface. Respect source availability and rate limits; see [pybaseball documentation](https://github.com/jldbc/pybaseball).
+
+## Model comparison
+
+From the project folder, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pitch_mix_lab.compare_models --input data/raw/statcast.csv --output reports
