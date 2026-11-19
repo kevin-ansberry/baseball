@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/35100129/README.md)
 # Pitch Mix Lab
 
 **A public-data baseball research project on pitch selection and decision support.**
@@ -21,11 +22,12 @@ The work demonstrates a complete baseball analytics workflow: data ingestion, qu
 Requires Python 3.10+.
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -e .
-python -m pitch_mix_lab.fetch --start 2024-04-01 --end 2024-09-30 --output data/raw/statcast.csv
-python -m pitch_mix_lab.analyze --input data/raw/statcast.csv --output reports
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m pitch_mix_lab.fetch --start 2024-04-01 --end 2024-09-30 --output data/raw/statcast.csv
+.\.venv\Scripts\python.exe -m pitch_mix_lab.analyze --input data/raw/statcast.csv --output reports --min-pitches 50
+.\.venv\Scripts\python.exe -m pitch_mix_lab.compare_features --input data/raw/statcast.csv --output reports
+.\.venv\Scripts\python.exe -m pitch_mix_lab.compare_models --input data/raw/statcast.csv --output reports
 ```
 
 The data fetch uses the public Baseball Savant Statcast feed through `pybaseball`. Fetch a short date range first; a full season can take time and the source may throttle requests. Raw data is intentionally not committed to Git.
@@ -37,14 +39,16 @@ The data fetch uses the public Baseball Savant Statcast feed through `pybaseball
 3. Define a whiff as a swinging strike or missed bunt (`swinging_strike`, `swinging_strike_blocked`, or `missed_bunt`). Foul and in-play swings are non-whiffs; takes are excluded.
 4. Train a simple logistic-regression baseline using pitch type, count, handedness, and release speed when available.
 5. Evaluate on the latest 20% of dates, keeping the split chronological. Report ROC AUC, Brier score, and a calibration plot so discrimination and probability quality are both visible.
-6. Compare descriptive whiff rates by pitch type and count. Do not interpret these contrasts as causal effects of changing a pitcher's mix.
+6. Compare descriptive whiff rates by pitch type, count, batter handedness, and pitcher handedness. The rate table includes 95% Wilson intervals and a configurable minimum-sample flag. Do not interpret these contrasts as causal effects of changing a pitcher's mix.
+7. Compare candidate feature blocks on three expanding-window validation periods before the reserved final holdout. Review mean and fold-level ROC AUC and Brier scores in the feature comparison reports. Current-pitch tracking features are labeled as diagnostic because they are observed during or after delivery.
+8. Compare L2/L1 logistic regression and histogram gradient boosting on the same pre-pitch feature sets and rolling date windows. Keep the latest-date holdout reserved until model choice is complete.
 
 ## Repository layout
 
 ```text
-src/pitch_mix_lab/  data fetch, validation, and analysis code
+src/pitch_mix_lab/  data fetch, validation, analysis, and feature comparison code
 data/raw/           downloaded data (gitignored)
-reports/            generated figures and summary
+reports/            generated figures, summaries, rate tables, and feature/model comparisons
 docs/               research notes and limitations
 ```
 
@@ -54,11 +58,16 @@ docs/               research notes and limitations
 - Pitch selection is not random. Differences between pitch types can reflect pitcher skill, count, batter, location, and strategic intent.
 - Public data and a simple baseline cannot reproduce the information available to a professional club.
 - A model score is not evidence that a recommended usage change would improve outcomes.
+- Confidence intervals describe binomial sampling uncertainty; they do not account for pitcher, batter, or pitch-selection confounding.
+- Current-pitch speed, location, and movement measurements are not known before the pitch; they must be replaced with historical estimates for a pre-pitch recommendation.
+- Pitcher and batter ID features can memorize recurring players and do not establish performance on entirely new players.
+- The model comparison currently uses fixed starter settings. It is a comparison, not a complete hyperparameter search.
 
 ## Next steps
 
 - Add pitcher-level and batter-level partial pooling, with uncertainty intervals.
-- Add location and movement features, then test whether they improve out-of-time calibration.
+- Build historical pitcher/pitch-type arsenal features using only prior pitches, then compare them on rolling time windows.
+- Tune selected model families within the development period and evaluate the final selected pipeline once on the untouched holdout.
 - Explore run value with an explicit, documented outcome definition.
 - Build a small interactive view for one pitcher and expose sample sizes and uncertainty alongside every rate.
 - Write a one-page baseball-facing memo with a concrete example and caveats.
